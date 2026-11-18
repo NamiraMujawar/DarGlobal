@@ -38,6 +38,10 @@ Tests are not the website. Run them separately, in a second terminal:
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
+Every push or pull request to `main` also runs the test suite, validates the
+Compose configuration, builds the Docker image, and smoke-tests its health
+endpoint through GitHub Actions.
+
 ## Docker
 
 The container includes the Python standard-library app and does not install from
@@ -96,6 +100,7 @@ guardrails.py          Input validation, PII redaction, source injection and cit
 static/                Responsive chat UI (plain HTML, CSS, JavaScript)
 knowledge_packs/       Printable, attributed DarGlobal and Wasalt research briefs
 tests/                 Offline unit tests
+.github/workflows/     Automated tests and Docker build checks
 GUARDRAILS.md          AI safety and PII behavior, guarantees, and limitations
 Dockerfile             Small, non-root Python container
 docker-compose.yml     Local container configuration
