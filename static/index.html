@@ -1,0 +1,89 @@
+<!doctype html>
+<!-- Author: Namira Mujawar | Project date: 2026-11-18 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#123b55">
+    <meta name="description" content="A property assistant for questions about DarGlobal and Wasalt.">
+    <title>DarGlobal × Wasalt | Property Assistant</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Property intelligence home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" focusable="false">
+              <path d="M7 21 24 8l17 13M12 19v21h24V19M19 40V27h10v13" />
+              <path d="M18 22h3m8 0h3" />
+              <path class="brand-mark-accent" d="M24 8v7" />
+            </svg>
+          </span>
+          <span class="brand-copy"><strong>PROPERTY</strong><small>DARGLOBAL × WASALT</small></span>
+        </a>
+        <button class="new-chat" id="new-chat" type="button"><span>+</span> New conversation</button>
+        <section class="conversation-history" aria-labelledby="history-heading">
+          <h2 id="history-heading">Recent conversations</h2>
+          <nav id="conversation-list" aria-label="Saved conversations"></nav>
+        </section>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div class="topbar-label"><span class="topbar-dot"></span> PROPERTY ASSISTANT</div>
+          <div class="topbar-right">
+            <span class="status-pill" id="model-status"><span class="status-dot"></span> Connecting</span>
+            <span class="avatar" aria-label="Guest">G</span>
+          </div>
+        </header>
+
+        <section class="conversation" id="conversation">
+          <div class="welcome" id="welcome">
+            <div class="welcome-kicker">DARGLOBAL <span aria-hidden="true">·</span> WASALT</div>
+            <h1>How can I help?</h1>
+            <p class="welcome-copy">Ask me about DarGlobal, Wasalt, their projects, or services.</p>
+            <div class="suggestion-grid">
+              <button class="suggestion" type="button" data-prompt="What kind of real-estate services does Wasalt offer?">
+                <span class="suggestion-icon">⌂</span><span><strong>Explore Wasalt</strong><small>Services and platform</small></span><b>↗</b>
+              </button>
+              <button class="suggestion" type="button" data-prompt="What can you tell me about DarGlobal's projects?">
+                <span class="suggestion-icon">◇</span><span><strong>DarGlobal projects</strong><small>Developments and destinations</small></span><b>↗</b>
+              </button>
+              <button class="suggestion" type="button" data-prompt="How does Wasalt describe its platform?">
+                <span class="suggestion-icon">◎</span><span><strong>About DarGlobal</strong><small>Company, vision, and markets</small></span><b>↗</b>
+              </button>
+              <button class="suggestion" type="button" data-prompt="Compare what DarGlobal and Wasalt focus on.">
+                <span class="suggestion-icon">⌘</span><span><strong>Compare the companies</strong><small>How their businesses differ</small></span><b>↗</b>
+              </button>
+            </div>
+          </div>
+          <div class="messages" id="messages" aria-live="polite" aria-relevant="additions"></div>
+        </section>
+
+        <section class="composer-wrap">
+          <form class="composer" id="chat-form">
+            <label class="sr-only" for="question">Ask your property question</label>
+            <textarea id="question" name="question" rows="1" maxlength="2000" placeholder="Ask about a company, project, or property topic…" aria-describedby="question-help" required></textarea>
+            <div class="composer-footer">
+              <div class="composer-hint" id="question-help"><span>↵</span> Enter to send <span class="hint-divider">·</span> <kbd>Shift</kbd> + <kbd>↵</kbd> for a new line</div>
+              <button class="send-button" id="send-button" type="submit" aria-label="Send question"><span>Ask</span><b>↑</b></button>
+            </div>
+          </form>
+          <p class="disclaimer">For current availability or transaction details, confirm with the company.</p>
+        </section>
+      </main>
+    </div>
+    <template id="message-template">
+      <article class="message">
+        <div class="message-avatar"></div>
+        <div class="message-body">
+          <div class="message-heading"></div>
+          <div class="message-text"></div>
+          <div class="message-sources"></div>
+        </div>
+      </article>
+    </template>
+  </body>
+</html>

@@ -1,0 +1,2 @@
+# Author: Namira Mujawar | Project date: 2026-11-18
+# Python standard library only: no third-party packages are required.

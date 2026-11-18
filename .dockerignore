@@ -1,0 +1,7 @@
+# Author: Namira Mujawar | Project date: 2026-11-18
+.env
+.venv
+__pycache__
+*.py[cod]
+data
+.git

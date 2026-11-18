@@ -1,0 +1,25 @@
+# Author: Namira Mujawar | Project date: 2026-11-18
+services:
+  assistant:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openrouter/free}
+    volumes:
+      - assistant_data:/app/data
+    restart: unless-stopped
+  indexer:
+    build: .
+    command: ["python", "scraper.py"]
+    profiles:
+      - index
+    volumes:
+      - assistant_data:/app/data
+    restart: "no"
+
+volumes:
+  assistant_data:
