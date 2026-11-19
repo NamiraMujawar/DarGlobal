@@ -155,28 +155,117 @@ function renderCitations(sourceList, sources) {
 
 function renderAssistantText(element, text) {
   const content = text.replace(/\s*\[S\d+\]/g, "");
-  const contactPattern =
-    /crm@darglobal\.co\.uk|support@wasalt\.com|https:\/\/darglobal\.co\.uk\/get-in-touch|https:\/\/support\.wasalt\.com\/?/gi;
+  const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g;
   const fragment = document.createDocumentFragment();
-  let cursor = 0;
+  let lastIndex = 0;
   let match;
 
-  while ((match = contactPattern.exec(content)) !== null) {
-    fragment.append(document.createTextNode(content.slice(cursor, match.index)));
-    const value = match[0];
-    const link = document.createElement("a");
-    const isEmail = value.includes("@");
-    link.href = isEmail ? `mailto:${value.toLowerCase()}` : value;
-    if (!isEmail) {
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
+  function appendInlineFormatted(target, raw) {
+    const inlineRegex =
+      /(crm@darglobal\.co\.uk|support@wasalt\.com|https:\/\/darglobal\.co\.uk\/get-in-touch|https:\/\/support\.wasalt\.com\/?)|(\*{2}(.+?)\*{2})|(`([^`]+)`)/gi;
+    let cur = 0;
+    let m;
+    while ((m = inlineRegex.exec(raw)) !== null) {
+      if (m.index > cur) {
+        target.append(document.createTextNode(raw.slice(cur, m.index)));
+      }
+      if (m[1]) {
+        const val = m[1];
+        const isEmail = val.includes("@");
+        const a = document.createElement("a");
+        a.href = isEmail ? `mailto:${val.toLowerCase()}` : val;
+        if (!isEmail) {
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+        }
+        a.textContent = val;
+        target.append(a);
+      } else if (m[3]) {
+        const strong = document.createElement("strong");
+        strong.textContent = m[3];
+        target.append(strong);
+      } else if (m[5]) {
+        const code = document.createElement("code");
+        code.textContent = m[5];
+        target.append(code);
+      }
+      cur = inlineRegex.lastIndex;
     }
-    link.textContent = value;
-    fragment.append(link);
-    cursor = contactPattern.lastIndex;
+    if (cur < raw.length) {
+      target.append(document.createTextNode(raw.slice(cur)));
+    }
   }
 
-  fragment.append(document.createTextNode(content.slice(cursor)));
+  function appendTextBlock(target, blockText) {
+    const lines = blockText.split("\n");
+    let currentP = null;
+    let currentList = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      if (!trimmed) {
+        currentP = null;
+        currentList = null;
+        continue;
+      }
+
+      const bulletMatch = trimmed.match(/^[-*•]\s+(.*)$/);
+      if (bulletMatch) {
+        currentP = null;
+        if (!currentList || currentList.tagName !== "UL") {
+          currentList = document.createElement("ul");
+          target.append(currentList);
+        }
+        const li = document.createElement("li");
+        appendInlineFormatted(li, bulletMatch[1]);
+        currentList.append(li);
+        continue;
+      }
+
+      const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+      if (numMatch) {
+        currentP = null;
+        if (!currentList || currentList.tagName !== "OL") {
+          currentList = document.createElement("ol");
+          target.append(currentList);
+        }
+        const li = document.createElement("li");
+        appendInlineFormatted(li, numMatch[2]);
+        currentList.append(li);
+        continue;
+      }
+
+      currentList = null;
+      if (!currentP) {
+        currentP = document.createElement("p");
+        target.append(currentP);
+      } else {
+        currentP.append(document.createElement("br"));
+      }
+      appendInlineFormatted(currentP, line);
+    }
+  }
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      appendTextBlock(fragment, content.slice(lastIndex, match.index));
+    }
+    const lang = match[1];
+    const codeContent = match[2];
+    const pre = document.createElement("pre");
+    if (lang) pre.setAttribute("data-language", lang);
+    const code = document.createElement("code");
+    code.textContent = codeContent.replace(/\n$/, "");
+    pre.append(code);
+    fragment.append(pre);
+    lastIndex = codeBlockRegex.lastIndex;
+  }
+
+  if (lastIndex < content.length) {
+    appendTextBlock(fragment, content.slice(lastIndex));
+  }
+
   element.replaceChildren(fragment);
 }
 

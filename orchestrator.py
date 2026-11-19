@@ -90,6 +90,13 @@ _POLICY_TOPIC_PATTERNS = (
     ("payment", re.compile(r"\b(?:payments?|installments?|instalments?)\b", re.I)),
     ("deposit", re.compile(r"\b(?:deposits?|booking fees?)\b", re.I)),
 )
+_OFF_TOPIC_CODE_PATTERN = re.compile(
+    r"\b(?:code|coding|program|programming|script|scripting|function|algorithm|"
+    r"python|puthon|pyton|javascript|javscript|typescript|java|c\+\+|golang|rust|"
+    r"html|css|sql|bash|powershell|regex)\b|"
+    r"\b(?:write|create|generate|fix|debug)\s+(?:a\s+)?(?:code|program|script|function|app|crawler|software)\b",
+    re.I,
+)
 
 
 def is_darglobal_question(question):
@@ -127,6 +134,10 @@ def policy_evidence_matches(question, text):
     return bool(required) and all(pattern.search(text) for pattern in required)
 
 
+def is_off_topic_code(text):
+    return bool(_OFF_TOPIC_CODE_PATTERN.search(text))
+
+
 def classify_query(question):
     normalized = " ".join(_NORMALIZE.sub(" ", question.lower()).split())
     if is_credential_request(normalized):
@@ -149,6 +160,8 @@ def classify_query(question):
         return "property"
     if any(term in normalized or term in question for term in _PROPERTY_TERMS):
         return "property"
+    if is_off_topic_code(normalized):
+        return "off_topic"
     return "general"
 
 
@@ -169,6 +182,12 @@ def answer_deterministic(route, question=""):
         if is_guardrail_question(question):
             answer += " " + guardrail_summary
         return answer
+    if route == "off_topic":
+        return (
+            "I am specialized in DarGlobal and Wasalt property intelligence. "
+            "I cannot assist with general programming, code generation, or unrelated technical topics. "
+            "Please feel free to ask about properties, developments, or company updates."
+        )
     if route == "guardrails":
         return guardrail_summary
     if route == "greeting":

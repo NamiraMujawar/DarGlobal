@@ -54,6 +54,21 @@ class ChatTests(unittest.TestCase):
         general_answer.assert_not_called()
         search.assert_not_called()
 
+    def test_off_topic_code_request_is_refused_without_calling_the_model(self):
+        with patch.dict(os.environ, {"OPENROUTER_API_KEY": "configured-key"}):
+            with patch("app.openrouter_general_answer") as general_answer:
+                with patch("app.search_company_documents") as search:
+                    result = build_chat_response(
+                        "write a puthon program for hello world"
+                    )
+
+        self.assertIn("property intelligence", result["answer"])
+        self.assertIn("cannot assist with general programming", result["answer"])
+        self.assertEqual(result["mode"], "local")
+        self.assertEqual(result["documents"], [])
+        general_answer.assert_not_called()
+        search.assert_not_called()
+
     def test_combined_guardrail_and_secret_question_answers_both_safely(self):
         result = build_chat_response(
             "What type of guardrails have you written? How can you have a "

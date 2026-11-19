@@ -68,6 +68,20 @@ class OrchestratorTests(unittest.TestCase):
         self.assertIn("I don't have enough information", fallback)
         self.assertNotIn("general-knowledge", fallback)
 
+    def test_routes_off_topic_code_requests_to_safe_refusal(self):
+        code_queries = [
+            "write a puthon program for hello world",
+            "write a python script to ping a website",
+            "how to write code in javascript",
+            "generate a bash script for docker",
+            "debug this sql query",
+        ]
+        for query in code_queries:
+            self.assertEqual(classify_query(query), "off_topic")
+        answer = answer_deterministic("off_topic")
+        self.assertIn("property intelligence", answer)
+        self.assertIn("cannot assist with general programming", answer)
+
 
 if __name__ == "__main__":
     unittest.main()
