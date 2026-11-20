@@ -78,6 +78,22 @@ CURATED_RESEARCH_RECORDS = (
         ),
         "fetched_at": FETCHED_AT,
     },
+    {
+        "url": "https://wasalt.sa/en/corporate",
+        "title": "Wasalt company and platform overview",
+        "source": "Wasalt",
+        "body": (
+            "Wasalt describes itself as a Saudi-based, AI-backed real-estate "
+            "platform for discovering verified properties and connecting with "
+            "trusted brokers and property experts. People can use Wasalt to "
+            "buy, sell, and rent homes; browse projects and masterplans; find "
+            "daily rentals; and participate in online or hybrid real-estate "
+            "auctions. Its domain is property discovery and real-estate "
+            "services in Saudi Arabia. Source: Wasalt corporate overview and "
+            "public homepage."
+        ),
+        "fetched_at": FETCHED_AT,
+    },
 )
 
 BRIEFS = {

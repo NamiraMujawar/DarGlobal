@@ -98,6 +98,36 @@ class StreamingApiTests(unittest.TestCase):
         self.assertIn("cannot be provided", final["answer"])
         model.assert_not_called()
 
+    def test_streaming_misspelled_darglobal_support_request_returns_contact(self):
+        _, created = self.request_json("/api/conversations", "POST", {})
+        request = Request(
+            self.base_url + "/api/chat/stream",
+            data=json.dumps(
+                {
+                    "message": "i want to reach to coustomer care of dargloables",
+                    "conversation_id": created["conversation"]["id"],
+                }
+            ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+
+        with patch.dict(os.environ, {"OPENROUTER_API_KEY": "configured-key"}):
+            with patch("app.search_company_documents") as search:
+                with patch("app.openrouter_stream_answer") as model:
+                    with self.client.open(request) as response:
+                        events = [
+                            json.loads(line[5:].strip())
+                            for line in response.read().decode("utf-8").splitlines()
+                            if line.startswith("data:")
+                        ]
+
+        final = events[-1]
+        self.assertEqual(final["type"], "done")
+        self.assertEqual(final["mode"], "local")
+        self.assertIn("crm@darglobal.co.uk", final["answer"])
+        search.assert_not_called()
+        model.assert_not_called()
+
     def test_stream_endpoint_persists_chat_and_isolates_cookie_owner(self):
         _, created = self.request_json("/api/conversations", "POST", {})
         conversation_id = created["conversation"]["id"]
@@ -170,6 +200,32 @@ class StreamingApiTests(unittest.TestCase):
         self.assertIn("I don't have DarGlobal's fee or refund terms", final["answer"])
         self.assertEqual(final["sources"], [])
         open_url.assert_not_called()
+
+    def test_streaming_unspecified_refund_request_shares_support_contacts(self):
+        _, created = self.request_json("/api/conversations", "POST", {})
+        request = Request(
+            self.base_url + "/api/chat/stream",
+            data=json.dumps(
+                {
+                    "message": "give me refund",
+                    "conversation_id": created["conversation"]["id"],
+                }
+            ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+
+        with self.client.open(request) as response:
+            events = [
+                json.loads(line[5:].strip())
+                for line in response.read().decode("utf-8").splitlines()
+                if line.startswith("data:")
+            ]
+
+        final = events[-1]
+        self.assertEqual(final["type"], "done")
+        self.assertIn("I can't issue a refund", final["answer"])
+        self.assertIn("crm@darglobal.co.uk", final["answer"])
+        self.assertIn("support@wasalt.com", final["answer"])
 
 
 if __name__ == "__main__":

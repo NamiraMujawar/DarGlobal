@@ -54,6 +54,28 @@ class ChatTests(unittest.TestCase):
         general_answer.assert_not_called()
         search.assert_not_called()
 
+    def test_misspelled_darglobal_customer_care_gets_direct_contact(self):
+        with patch.dict(os.environ, {"OPENROUTER_API_KEY": "configured-key"}):
+            with patch("app.search_company_documents") as search:
+                with patch("app.openrouter_stream_answer") as model:
+                    result = build_chat_response(
+                        "i want to reach to coustomer care of dargloables"
+                    )
+
+        self.assertIn("crm@darglobal.co.uk", result["answer"])
+        self.assertIn("https://darglobal.co.uk/get-in-touch", result["answer"])
+        self.assertEqual(result["mode"], "local")
+        self.assertEqual(result["documents"], [])
+        search.assert_not_called()
+        model.assert_not_called()
+
+    def test_misspelled_wasalt_customer_care_gets_company_specific_contact(self):
+        result = build_chat_response("coustomer care for waslat")
+
+        self.assertIn("support@wasalt.com", result["answer"])
+        self.assertNotIn("crm@darglobal.co.uk", result["answer"])
+        self.assertEqual(result["mode"], "local")
+
     def test_off_topic_code_request_is_refused_without_calling_the_model(self):
         with patch.dict(os.environ, {"OPENROUTER_API_KEY": "configured-key"}):
             with patch("app.openrouter_general_answer") as general_answer:
@@ -246,6 +268,18 @@ class ChatTests(unittest.TestCase):
         self.assertEqual(
             {item["source"] for item in result["documents"]}, {"Wasalt"}
         )
+
+    def test_combined_company_domain_question_answers_both_companies(self):
+        result = build_chat_response(
+            "what wasalt and dargoldwork ? what is the company company does?"
+        )
+
+        self.assertIn("Wasalt describes itself as a Saudi-based", result["answer"])
+        self.assertIn("DarGlobal is a Riyadh-headquartered", result["answer"])
+        self.assertIn("real-estate developer", result["answer"])
+        document_sources = {document["source"] for document in result["documents"]}
+        self.assertIn("Wasalt", document_sources)
+        self.assertIn("DarGlobal official statements", document_sources)
 
     def test_loose_darglobal_query_retrieves_wikipedia_and_news_sources(self):
         knowledge.save_page(

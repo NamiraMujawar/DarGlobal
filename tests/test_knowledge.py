@@ -49,8 +49,8 @@ class KnowledgeTests(unittest.TestCase):
 
         results = knowledge.search_documents("Wasalt platform", limit=2)
 
-        self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["source"], "Wasalt")
+        self.assertIn("https://wasalt.sa/about-us", {item["url"] for item in results})
         self.assertIn("snippet", results[0])
 
     def test_search_returns_no_unrelated_pages(self):
@@ -111,10 +111,8 @@ class KnowledgeTests(unittest.TestCase):
             "Wasalt offers property discovery and real estate services.",
             "2026-01-01T00:00:00+00:00",
         )
-        self.assertEqual(
-            knowledge.search_documents("What does Wasalt offer?")[0]["url"],
-            "https://wasalt.sa/about-us",
-        )
+        results = knowledge.search_documents("What does Wasalt offer?")
+        self.assertIn("https://wasalt.sa/about-us", {item["url"] for item in results})
 
     def test_source_status_lists_blocked_and_available_sources(self):
         knowledge.record_source_status(
@@ -183,6 +181,17 @@ class KnowledgeTests(unittest.TestCase):
         self.assertIn("United Kingdom", portfolio_record["body"])
         statuses = {item["source"]: item for item in knowledge.source_list()}
         self.assertEqual(statuses["DarGlobal official statements"]["status"], "curated")
+
+    def test_initialization_indexes_wasalt_company_profile(self):
+        results = knowledge.search_documents(
+            "Wasalt domain property platform", limit=8
+        )
+
+        wasalt_record = next(item for item in results if item["source"] == "Wasalt")
+        self.assertIn("Saudi-based", wasalt_record["body"])
+        self.assertIn("property discovery", wasalt_record["body"])
+        statuses = {item["source"]: item for item in knowledge.public_source_list()}
+        self.assertEqual(statuses["Wasalt"]["status"], "curated")
 
 
 class ScraperTests(unittest.TestCase):

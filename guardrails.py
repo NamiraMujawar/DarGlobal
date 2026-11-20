@@ -6,7 +6,11 @@ Author: Namira Mujawar | Project date: 2026-11-18
 import re
 import unicodedata
 
-from orchestrator import has_policy_terms, is_darglobal_question
+from orchestrator import (
+    has_policy_terms,
+    is_darglobal_question,
+    is_wasalt_question,
+)
 
 
 MAX_QUESTION_LENGTH = 2_000
@@ -15,6 +19,10 @@ MAX_SOURCE_EXCERPT_LENGTH = 1_600
 DARGLOBAL_CRM_EMAIL = "crm@darglobal.co.uk"
 WASALT_SUPPORT_EMAIL = "support@wasalt.com"
 PUBLIC_CONTACT_EMAILS = (DARGLOBAL_CRM_EMAIL, WASALT_SUPPORT_EMAIL)
+_CUSTOMER_SUPPORT_PATTERN = re.compile(
+    r"\b(?:c(?:o)?ustomer\s*(?:care|support|service|relations)|support\s+team)\b",
+    re.IGNORECASE,
+)
 
 EMAIL_PATTERN = re.compile(
     r"(?<![\w.+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(?![\w-])",
@@ -134,6 +142,29 @@ def validate_model_answer(value, allowed_source_count):
     return redact_pii(answer)
 
 
+def customer_support_answer(question):
+    if not _CUSTOMER_SUPPORT_PATTERN.search(question):
+        return None
+
+    normalized = question.lower()
+    darglobal = is_darglobal_question(question)
+    wasalt = is_wasalt_question(question)
+    if darglobal and not wasalt:
+        return (
+            "For DarGlobal customer support, email {0} or use "
+            "https://darglobal.co.uk/get-in-touch."
+        ).format(DARGLOBAL_CRM_EMAIL)
+    if wasalt and not darglobal:
+        return (
+            "For Wasalt Support, email {0} or use https://support.wasalt.com."
+        ).format(WASALT_SUPPORT_EMAIL)
+    return (
+        "For help with a DarGlobal matter, email {0} or use "
+        "https://darglobal.co.uk/get-in-touch. For Wasalt Support, email {1} "
+        "or use https://support.wasalt.com."
+    ).format(DARGLOBAL_CRM_EMAIL, WASALT_SUPPORT_EMAIL)
+
+
 def no_evidence_message(question, sources):
     """Explain index limitations without pretending an answer is source-backed."""
     normalized = question.lower().replace(" ", "")
@@ -149,7 +180,7 @@ def no_evidence_message(question, sources):
             )
         )
     )
-    wasalt = "wasalt" in normalized or "وصلت" in normalized
+    wasalt = is_wasalt_question(question)
     source_by_name = {item["source"]: item for item in sources}
 
     if has_policy_terms(question) and darglobal:
@@ -169,6 +200,13 @@ def no_evidence_message(question, sources):
             "Support at {0} or https://support.wasalt.com. If you tell me which "
             "service or listing you mean, I can look for related public information."
         ).format(WASALT_SUPPORT_EMAIL)
+    if has_policy_terms(question):
+        return (
+            "I can't issue a refund or confirm terms without knowing which "
+            "company or transaction applies. Please check your booking terms. "
+            "For DarGlobal, contact {0} or https://darglobal.co.uk/get-in-touch; "
+            "for Wasalt, contact {1} or https://support.wasalt.com."
+        ).format(DARGLOBAL_CRM_EMAIL, WASALT_SUPPORT_EMAIL)
 
     if darglobal and "DarGlobal" in source_by_name:
         source = source_by_name["DarGlobal"]
@@ -178,37 +216,47 @@ def no_evidence_message(question, sources):
         if asks_country_count and source.get("status") in {"blocked", "metadata_only"}:
             return (
                 "I can't confirm a current country count for DarGlobal from the "
-                "information I have, and I don't want to guess."
-            )
+                "information I have, and I don't want to guess. For customer "
+                "support, contact {0} or "
+                "https://darglobal.co.uk/get-in-touch."
+            ).format(DARGLOBAL_CRM_EMAIL)
         if source.get("status") == "metadata_only":
             return (
                 "I don't have enough verified information to confirm specific "
-                "DarGlobal project details, status, prices, or availability."
-            )
+                "DarGlobal project details, status, prices, or availability. "
+                "For customer support, contact {0} or "
+                "https://darglobal.co.uk/get-in-touch."
+            ).format(DARGLOBAL_CRM_EMAIL)
         if source.get("status") == "blocked":
             company_record = source_by_name.get("Companies House")
             if company_record and company_record.get("page_count", 0):
                 return (
                     "I can confirm DarGlobal's basic company registration, but "
                     "I don't have enough verified information to confirm specific "
-                    "project or location details."
-                )
+                    "project or location details. Contact customer relations at "
+                    "{0} or https://darglobal.co.uk/get-in-touch for help."
+                ).format(DARGLOBAL_CRM_EMAIL)
             return (
                 "I don't have enough verified information to confirm DarGlobal's "
                 "project or location details. I can still help with its company "
-                "profile or with Wasalt."
-            )
+                "profile or with Wasalt. For DarGlobal support, contact {0} or "
+                "https://darglobal.co.uk/get-in-touch."
+            ).format(DARGLOBAL_CRM_EMAIL)
         if source.get("page_count", 0) == 0:
             return (
                 "I don't have enough information about that DarGlobal topic yet. "
-                "I can still help with its company profile or other public updates."
-            )
+                "I can still help with its company profile or other public updates. "
+                "For customer support, contact {0} or "
+                "https://darglobal.co.uk/get-in-touch."
+            ).format(DARGLOBAL_CRM_EMAIL)
     if wasalt and "Wasalt" in source_by_name:
         return (
             "I couldn't find that detail on Wasalt's public pages. I can still "
-            "help with its platform, property services, projects, or auctions."
-        )
+            "help with its platform, property services, projects, or auctions. "
+            "For support, contact {0} or https://support.wasalt.com."
+        ).format(WASALT_SUPPORT_EMAIL)
     return (
         "I couldn't find that detail in the public sources I have. Try asking "
-        "in another way, or ask about a company, project, or property service."
-    )
+        "in another way, or ask about a company, project, or property service. "
+        "For DarGlobal support, contact {0}; for Wasalt Support, contact {1}."
+    ).format(DARGLOBAL_CRM_EMAIL, WASALT_SUPPORT_EMAIL)

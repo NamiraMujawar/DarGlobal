@@ -6,7 +6,12 @@ Author: Namira Mujawar | Project date: 2026-11-18
 import re
 import unittest
 
-from orchestrator import answer_deterministic, classify_query
+from orchestrator import (
+    answer_deterministic,
+    classify_query,
+    is_darglobal_question,
+    is_wasalt_question,
+)
 
 
 class OrchestratorTests(unittest.TestCase):
@@ -35,6 +40,20 @@ class OrchestratorTests(unittest.TestCase):
         )
         self.assertEqual(
             classify_query("Dar Gloable fee structure or refund policies?"),
+            "property",
+        )
+        self.assertEqual(classify_query("What do Wasalt and Dargold work on?"), "property")
+        self.assertTrue(
+            is_darglobal_question("i want to reach to coustomer care of dargloables")
+        )
+        self.assertEqual(
+            classify_query("i want to reach to coustomer care of dargloables"),
+            "property",
+        )
+        self.assertTrue(is_darglobal_question("dargoldwork"))
+        self.assertTrue(is_wasalt_question("waslat"))
+        self.assertEqual(
+            classify_query("what waslat and dargoldwork do?"),
             "property",
         )
 

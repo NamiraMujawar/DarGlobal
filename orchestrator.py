@@ -70,8 +70,9 @@ _GUARDRAIL_QUESTION_PATTERN = re.compile(
     r"\b(?:written|implemented|use|work|configured)\b",
     re.I,
 )
-_DAR_GLOBAL_NAME_PATTERN = re.compile(r"\bdar(?:k)?\s*global(?:e)?\b", re.I)
-_DAR_GLOBAL_TYPO_PATTERN = re.compile(r"\bdar\s*gloable\b", re.I)
+_DAR_GLOBAL_NAME_PATTERN = re.compile(
+    r"\bdar(?:k)?\s*(?:global(?:e|es)?|gloables?|gold)\b", re.I
+)
 _DAR_GLOBAL_ALIAS_PATTERN = re.compile(
     r"\bglobal(?:e)?\b.*\b(?:countr\w*|operat\w*)\b|"
     r"\b(?:countr\w*|operat\w*)\b.*\bglobal(?:e)?\b",
@@ -99,11 +100,74 @@ _OFF_TOPIC_CODE_PATTERN = re.compile(
 )
 
 
+def _edit_distance_at_most(left, right, maximum):
+    if abs(len(left) - len(right)) > maximum:
+        return False
+
+    distances = [
+        [0] * (len(right) + 1) for _ in range(len(left) + 1)
+    ]
+    for row in range(len(left) + 1):
+        distances[row][0] = row
+    for column in range(len(right) + 1):
+        distances[0][column] = column
+
+    for row in range(1, len(left) + 1):
+        for column in range(1, len(right) + 1):
+            distances[row][column] = min(
+                distances[row - 1][column] + 1,
+                distances[row][column - 1] + 1,
+                distances[row - 1][column - 1]
+                + (left[row - 1] != right[column - 1]),
+            )
+            if (
+                row > 1
+                and column > 1
+                and left[row - 1] == right[column - 2]
+                and left[row - 2] == right[column - 1]
+            ):
+                distances[row][column] = min(
+                    distances[row][column],
+                    distances[row - 2][column - 2] + 1,
+                )
+    return distances[-1][-1] <= maximum
+
+
+def _contains_company_name(question, aliases, maximum):
+    words = re.findall(r"[a-z]+", question.lower())
+    candidates = list(words)
+    candidates.extend(
+        words[index] + words[index + 1]
+        for index in range(len(words) - 1)
+    )
+    for candidate in candidates:
+        if len(candidate) > 24:
+            continue
+        for alias in aliases:
+            minimum_length = max(4, len(alias) - maximum)
+            maximum_length = min(len(candidate), len(alias) + maximum)
+            for start in range(len(candidate)):
+                for length in range(minimum_length, maximum_length + 1):
+                    fragment = candidate[start : start + length]
+                    if _edit_distance_at_most(fragment, alias, maximum):
+                        return True
+    return False
+
+
 def is_darglobal_question(question):
     return bool(
         _DAR_GLOBAL_NAME_PATTERN.search(question)
-        or _DAR_GLOBAL_TYPO_PATTERN.search(question)
         or _DAR_GLOBAL_ALIAS_PATTERN.search(question)
+        or _contains_company_name(
+            question, ("darglobal", "dargold"), maximum=2
+        )
+    )
+
+
+def is_wasalt_question(question):
+    return bool(
+        re.search(r"\bوصلت\b", question)
+        or _contains_company_name(question, ("wasalt",), maximum=1)
     )
 
 
@@ -158,7 +222,9 @@ def classify_query(question):
         return "property"
     if is_darglobal_question(normalized):
         return "property"
-    if any(term in normalized or term in question for term in _PROPERTY_TERMS):
+    if is_wasalt_question(normalized) or any(
+        term in normalized or term in question for term in _PROPERTY_TERMS
+    ):
         return "property"
     if is_off_topic_code(normalized):
         return "off_topic"

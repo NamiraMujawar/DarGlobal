@@ -19,6 +19,7 @@ import conversations
 from guardrails import (
     GuardrailError,
     SYSTEM_POLICY,
+    customer_support_answer,
     no_evidence_message,
     prepare_source_excerpts,
     redact_pii,
@@ -37,6 +38,7 @@ from orchestrator import (
     classify_query,
     has_policy_terms,
     is_darglobal_question,
+    is_wasalt_question,
     policy_evidence_matches,
 )
 
@@ -80,7 +82,8 @@ def excerpt_answer(message, documents):
     )
     asks_about_wasalt = bool(
         re.search(
-            r"\b(?:what is|who is|what does|tell me about|describe|explain|platform|service|offer)\b",
+            r"\b(?:what is|who is|what does|tell me about|describe|explain|"
+            r"platform|service|offer|work|business|domain|industry|sector)\b",
             normalized,
         )
     )
@@ -105,6 +108,7 @@ def excerpt_answer(message, documents):
         )
 
     if "DarGlobal official statements" in sources:
+        darglobal_answer_count = len(answers)
         portfolio = next(
             (
                 document
@@ -160,7 +164,7 @@ def excerpt_answer(message, documents):
                     "Jeddah, and Dubai. These are announcements and plans, not "
                     "confirmation that every project is complete."
                 )
-        if not answers and asks_about_darglobal:
+        if len(answers) == darglobal_answer_count and asks_about_darglobal:
             answers.append(
                 "DarGlobal is a Riyadh-headquartered international real-estate "
                 "developer listed on the London Stock Exchange. Its public "
@@ -467,7 +471,7 @@ def company_entities(question):
     entities = set()
     if is_darglobal_question(question):
         entities.add("DarGlobal")
-    if re.search(r"\bwasalt\b|وصلت", question, re.IGNORECASE):
+    if is_wasalt_question(question):
         entities.add("Wasalt")
     return entities
 
@@ -579,6 +583,9 @@ def build_chat_response(message, history=None):
             "mode": "local",
             "documents": [],
         }
+    support_answer = customer_support_answer(message)
+    if support_answer:
+        return {"answer": support_answer, "mode": "local", "documents": []}
     if route == "general":
         try:
             answer, mode = openrouter_general_answer(message, history)
@@ -810,8 +817,13 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def handle_streaming_chat(self, owner_id, conversation_id, message, history):
         route = classify_query(message)
+        support_answer = (
+            None
+            if route in {"credential_request", "guardrails"}
+            else customer_support_answer(message)
+        )
         documents = []
-        if route not in {
+        if not support_answer and route not in {
             "credential_request",
             "guardrails",
             "greeting",
@@ -839,7 +851,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.flush()
 
         try:
-            if route in {
+            if support_answer:
+                answer, mode = support_answer, "local"
+            elif route in {
                 "credential_request",
                 "guardrails",
                 "greeting",
@@ -874,7 +888,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 result = build_chat_response(message, history)
                 answer, mode = result["answer"], result["mode"]
 
-            if not documents and route == "property":
+            if not documents and route == "property" and not support_answer:
                 answer = no_evidence_message(message, source_list())
                 mode = "demo"
             elif mode != "openrouter":

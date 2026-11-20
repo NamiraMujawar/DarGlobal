@@ -140,6 +140,14 @@ class GuardrailTests(unittest.TestCase):
         self.assertIn("support@wasalt.com", answer)
         self.assertIn("https://support.wasalt.com", answer)
 
+    def test_refund_request_without_company_shares_both_support_contacts(self):
+        answer = no_evidence_message("give me refund", [])
+
+        self.assertIn("I can't issue a refund", answer)
+        self.assertIn("crm@darglobal.co.uk", answer)
+        self.assertIn("support@wasalt.com", answer)
+        self.assertIn("booking terms", answer)
+
 
 if __name__ == "__main__":
     unittest.main()

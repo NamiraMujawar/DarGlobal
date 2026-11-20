@@ -169,6 +169,10 @@ def initialize_database():
                     "curated",
                     "Paraphrased facts from official company statements.",
                 ),
+                "Wasalt": (
+                    "curated",
+                    "Paraphrased facts from Wasalt's public company overview.",
+                ),
                 "Zawya": (
                     "curated",
                     "Paraphrased facts from a DarGlobal press release republished by Zawya.",

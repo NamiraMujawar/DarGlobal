@@ -81,6 +81,8 @@ provider limits can change.
 - **Public data:** the bounded crawler indexes accessible Wasalt and other
   public pages. DarGlobal's site may return an automated verification page, so
   the chatbot also uses concise linked company summaries and secondary reports.
+  A curated Wasalt company profile is indexed at startup, so basic company and
+  service questions remain answerable if its pages are not retrieved.
 - **AI:** OpenRouter integration is present and defaults to `openrouter/free`;
   a valid server-side API key is required to activate model-generated answers.
 - **Container:** Docker builds the app without installing Python packages or
