@@ -1,7 +1,8 @@
 # DarGlobal × Wasalt Property Intelligence
 
 **Author:** Namira Mujawar  
-**Project date:** 2026-11-18
+**Project date:** 2026-11-18  
+**Live Deployed URL:** [https://darglobal.onrender.com](https://darglobal.onrender.com)
 
 A source-grounded research chatbot with a Python standard-library server, SQLite storage, a bounded public-site crawler, modular AI/PII guardrails, and optional OpenRouter integration. The app can be explored locally without an API key; common company questions receive concise, user-friendly answers, and linked sources appear separately below each answer. Configure an OpenRouter key for model-generated answers.
 
@@ -76,6 +77,16 @@ Never put a real key in the Dockerfile, Compose file, source code, or a built
 image. The free `openrouter/free` model is the default; model availability and
 provider limits can change.
 
+## Live Deployment
+
+The containerized application is deployed and live at:
+**[https://darglobal.onrender.com](https://darglobal.onrender.com)**
+
+- **Hosting Platform:** Render (Docker Web Service)
+- **Health Check:** `GET /api/health`
+- **Model Integration:** OpenRouter (`openrouter/free` or configured model) with Server-Sent Events (SSE) streaming
+- **Security:** Non-root Linux container (`app:app`), TLS/HTTPS, Content-Security-Policy, and deterministic PII/injection guardrails
+
 ## Assignment readiness
 
 - **Public data:** the bounded crawler indexes accessible Wasalt and other
@@ -84,12 +95,11 @@ provider limits can change.
   A curated Wasalt company profile is indexed at startup, so basic company and
   service questions remain answerable if its pages are not retrieved.
 - **AI:** OpenRouter integration is present and defaults to `openrouter/free`;
-  a valid server-side API key is required to activate model-generated answers.
+  a valid server-side API key is configured on the live deployment to activate model-generated answers.
 - **Container:** Docker builds the app without installing Python packages or
-  requiring a local `.env`. The source index and chat history use a named volume.
-- **Public deployment / URL:** this project has not been deployed to a public
-  host, so there is no public test URL yet. Deployment requires a hosting
-  account and its credentials; a local Docker URL is not publicly reachable.
+  requiring a local `.env`. The source index and chat history use a persistent volume.
+- **Public deployment / URL:** Successfully containerised and deployed to Render
+  at **[https://darglobal.onrender.com](https://darglobal.onrender.com)** for direct testing.
 
 ## Project layout
 
